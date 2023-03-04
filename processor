@@ -1,0 +1,309 @@
+////////////////////1st stage
+
+module prog_counter(clk,rst,PC_data_in,PC_data_out); input clk,rst;
+input [31:0]PC_data_in; output reg[31:0]PC_data_out; always@(posedge clk)
+begin if(rst)
+PC_data_out<=32'h0; else
+PC_data_out<=PC_data_in; end
+endmodule
+
+
+
+module PC_increment(p,q,PC_increment_out); input [31:0]p,q;
+output [31:0]PC_increment_out; assign PC_increment_out=p+q; endmodule
+
+
+module mux2(x0,x1,s1,mux2_out); 
+input [4:0]x0,x1;
+input s1;
+output [31:0]mux2_out; assign mux2_out=s1?x1:x0; endmodule
+
+ /////////////////////////////////////2nd stage
+ 
+module inst_memory(inst_memo_add,clk,inst_memo_out); input [31:0]inst_memo_add;
+input clk;
+output reg[31:0]inst_memo_out; reg [31:0] imemory [0:1024]; initial
+begin
+
+
+imemory[0] = 32'b000000_00000_00010_00000_00000_000000; //r type 
+imemory[4] = 32'b000000_00101_00001_00000_00000_000000;
+imemory[8] = 32'b000000_00010_00011_00000_00000_000001; 
+imemory[12] = 32'b000000_00011_01000_00110_00000_000010;
+
+imemory[16] = 32'b101011_00000_00100_00000_00000_001000; //s type 
+imemory[20] = 32'b101011_00000_00100_00000_00000_001000;  
+imemory[24] = 32'b101011_00000_00100_00000_00000_001000; 
+imemory[28] = 32'b100011_00000_01000_01010_00000_000011;  
+
+end
+always @(posedge clk) begin
+ 
+inst_memo_out = imemory[inst_memo_add];
+end
+endmodule
+
+ 
+module inst_splitter(ins_splitr_in,ins_splitr_out_u, ins_splitr_out_v,ins_splitr_out_w,ins_splitr_out_x,ins_splitr_out_y,ins_splitr_out_z);
+input  [31:0]ins_splitr_in; 
+output reg[5:0]ins_splitr_out_u; 
+output reg[4:0]ins_splitr_out_v; 
+output reg[4:0]ins_splitr_out_w; 
+output reg[4:0]ins_splitr_out_x;
+output reg[15:0]ins_splitr_out_y;
+output reg[5:0]ins_splitr_out_z;
+
+always@(ins_splitr_in) begin
+ins_splitr_out_u = ins_splitr_in[31:26];
+ins_splitr_out_v= ins_splitr_in[25:21]; 
+ins_splitr_out_w = ins_splitr_in[20:16];
+ins_splitr_out_x = ins_splitr_in[15:11]; 
+ins_splitr_out_y = ins_splitr_in[15:0]; 
+ins_splitr_out_z = ins_splitr_in[5:0]; 
+end
+endmodule
+ 
+ 
+module control_unit(opcode,regdst,branch, memread, memtoreg,  memwrite,alusrc,regwrite);
+input [5:0]opcode;
+output reg regdst,branch, memread, memtoreg,  memwrite,alusrc,regwrite; always@(opcode)
+begin case(opcode) 
+6'b000000 : begin
+regdst = 1'b1;
+alusrc = 1'b0;
+memtoreg = 1'b0;
+regwrite = 1'b0;
+memread = 1'b0; 
+memwrite = 1'b0;
+ end
+
+6'b100011 : begin
+regdst = 1'b1; 
+alusrc = 1'b0; 
+memtoreg = 1'b1; 
+regwrite = 1'b1; 
+memread = 1'b1; 
+memwrite = 1'b0;  
+end
+
+6'b101011 : begin
+regdst = 1'b1; 
+alusrc = 1'b1; 
+memtoreg = 1'bx; 
+regwrite = 1'b0; 
+memread = 1'b0; 
+memwrite = 1'b1; 
+ end
+
+endcase
+end 
+endmodule
+ 
+ 
+ module alu_control_unit(operation,clk,aluop1,aluop0,alu_control_out); input aluop0,aluop1,clk;
+input [5:0]operation;
+ 
+output reg[3:0]alu_control_out; always@(posedge clk)
+begin casex({operation})
+
+{6'b000000} : alu_control_out = 4'b0000;
+{6'b000001} : alu_control_out = 4'b0001;
+{6'b000010} : alu_control_out = 4'b0010;
+{6'b000011} : alu_control_out = 4'b0011;
+{6'b000100} : alu_control_out = 4'b0100;
+{6'b000101} : alu_control_out = 4'b0101;
+{6'b000110} : alu_control_out = 4'b0110;
+{6'b000111} : alu_control_out = 4'b0111; 
+endcase
+end 
+endmodule
+
+module mux3(y0,y1,s2,mux3_out); input [31:0]y0,y1;
+input s2;
+output [31:0]mux3_out;
+ assign mux3_out=s2?y1:y0; 
+endmodule
+
+module reg_memory( clk,reg_in_1,reg_in_2,reg_write,write_data,write_reg,reg_out_1,reg_out_2);
+input [4:0]reg_in_1,reg_in_2,write_reg; input reg_write;
+input [31:0]write_data; input clk;
+output reg[31:0]reg_out_1,reg_out_2; reg [31:0] rmemory [0:31];
+initial begin
+rmemory[0] = 32'b00000000000000000000000000001100; 
+rmemory[1] = 32'b00000000000000000000000000001101; 
+rmemory[2] = 32'b00000000000000000000000000000010; 
+rmemory[3] = 32'b00000000000000000000000000000011; 
+rmemory[4] = 32'b00000000000000000000000000001111; 
+rmemory[5] = 32'b00000000000000000000000000000101; 
+rmemory[6] = 32'b00000000000000000000000000000110; 
+rmemory[7] = 32'b00000000000000000000000000000111; 
+rmemory[8] = 32'b00000000000000000000000000001000; 
+rmemory[9] = 32'b00000000000000000000000000001001;
+
+end
+
+
+always @(posedge clk) begin
+  
+
+if(reg_write == 1) begin
+rmemory[write_reg] = write_data;
+reg_out_1 = rmemory[reg_in_1];
+reg_out_2 = rmemory[reg_in_2];
+ end
+else
+ begin
+reg_out_1 = rmemory[reg_in_1];
+reg_out_2 = rmemory[reg_in_2];
+  end
+ end
+endmodule
+
+
+
+
+////////////////////////////////////3rd stage
+
+
+module alu(p1,q1,alu_operation,alu_output,zero,s_f,z_f); 
+input [31:0]p1,q1;
+input [3:0]alu_operation;
+ output reg s_f,z_f; 
+ output [5:0]zero;
+output reg[31:0]alu_output; 
+parameter ADD=4'd0; 
+parameter SUB=4'd1; 
+parameter AND=4'd2; 
+
+always@(p1,q1,alu_operation,alu_output) begin
+
+case(alu_operation)
+ADD: begin alu_output[31:0]=p1+q1; 
+s_f=alu_output[31];
+end
+
+SUB: begin alu_output[31:0]=p1-q1; 
+s_f=alu_output[31];
+end
+
+AND:begin alu_output[31:0]=p1 & q1;
+ s_f=alu_output[31];
+end
+endcase
+
+if(alu_output==32'h0) begin
+z_f=1'b1; 
+end
+else 
+begin
+ z_f=1'b0; 
+end
+end
+ endmodule
+
+
+
+///////////////////////////////////////////////////////////4th stage
+module mux4(z0,z1,s3,mux4_out); 
+input [31:0]z0,z1;
+input s3;
+output [31:0]mux4_out; 
+assign mux4_out=s3?z1:z0;
+ endmodule
+
+
+
+module sign_extension(sign_ext_in,sign_ext_out); 
+input [15:0]sign_ext_in;
+output reg[31:0]sign_ext_out; 
+always@(sign_ext_in)
+begin
+sign_ext_out = {{16{sign_ext_in[15]}}, {sign_ext_in[15:0]}}; 
+end
+endmodule
+ 
+////////////////////////////////////////////////////////////5th stage
+
+
+module data_memory(data_memo_add,clk,memo_read,memo_write,write_data,data_mem_out);
+input [31:0]data_memo_add; input [31:0]write_data;
+input clk;
+input memo_read,memo_write; output reg[31:0]data_mem_out; reg [31:0] dmemory [0:1024]; initial
+begin
+dmemory[0]=32'b00000000000000000000000000000000; 
+dmemory[1]=32'b00000000000000000000000000000001; 
+dmemory[2]=32'b00000000000000000000000000000010; 
+dmemory[3]=32'b00000000000000000000000000000011; 
+dmemory[4]=32'b00000000000000000000000000000100; 
+dmemory[5]=32'b00000000000000000000000000000101; 
+dmemory[6]=32'b00000000000000000000000000000110; 
+dmemory[7]=32'b00000000000000000000000000000111;
+end
+always @(posedge clk) begin
+if(memo_write == 1) dmemory[data_memo_add] = write_data;
+
+else if (memo_read == 1)
+data_mem_out = dmemory[data_memo_add]; end
+endmodule
+ 
+
+
+ 
+  
+  /////////////////////////////////////////////connecting this 5 stages for RISC microprocessor
+  
+  
+module riscmicroprocessor(clk,rst,p1,q1,PC_data_out,inst_memo_out,sign_ext_out,memo_read,memo_write,data_mem_out,alu_output,s_f,z_f,alu_operation,PC_increment_out);
+input clk,rst; 
+output s_f,z_f;
+output [3:0]alu_operation;
+ output [31:0]p1,q1,sign_ext_out; 
+ output memo_read,memo_write;
+output [31:0]PC_data_out,inst_memo_out,data_mem_out,alu_output,PC_increment_out;
+wire [31:0]w1,w2,w3,w4,w6,w7,w8,w15,w16,w17,w19,w20,w21,w24;
+wire [15:0]w13; 
+wire [3:0]w28;
+wire [5:0] w9,w14,w22;
+wire [4:0]w10,w18,w11,w12; 
+wire w23,regdst;
+wire alusrc,aluop1,aluop2,memtoreg,memread,memwrite,aluop0,regwrite;
+
+prog_counter PC1(.PC_data_in(w1),.clk(clk),.rst(rst),.PC_data_out(w3));
+
+inst_memory ins1(.inst_memo_add(w3),.clk(clk),.inst_memo_out(w8));
+
+inst_splitter sp1(.ins_splitr_in(w8),.ins_splitr_out_u(w9),.ins_splitr_out_v(w10),.ins_splitr_out_w(w11),
+.ins_splitr_out_x(w12),.ins_splitr_out_y(w13),.ins_splitr_out_z(w14));
+
+PC_increment inc1(.p(w3),.PC_increment_out(w1),.q(32'h4)); reg_memory
+
+reg12(.clk(clk),.reg_in_1(w10),.reg_in_2(w11),.write_data(w24),.write_reg(w18),.reg_write(regwrite),.reg_out_1(w16),.reg_out_2(w17));
+
+mux4 m4(.z0(w17),.z1(w15),.s3(alusrc),.mux4_out(w19));
+
+alu alu1(.p1(w16),.q1(w19),.alu_operation(w28),.alu_output(w20),.s_f(s_f),.z_f(z_f));
+
+data_memory d1(.data_memo_add(w20),.clk(clk),.memo_read(memread),.memo_write(memwrite),.write_data(w17),.data_mem_out(w21));
+
+mux3 m3(.y0(w20),.y1(w21),.s2(memtoreg),.mux3_out(w24)); sign_extension sign1(.sign_ext_in(w13),.sign_ext_out(w15)); mux2 m2(.x0(w11),.x1(w12),.s1(regdst),.mux2_out(w18));
+
+control_unit cu1(.opcode(w9),.regdst(regdst),.memread(memread),.memwrite(memwrite),.memtoreg(memtoreg),.alusrc(alusrc),.regwrite(regwrite));
+
+alu_control_unit alu2(.operation(w14),.alu_control_out(w28),.clk(clk));
+
+
+
+assign PC_data_out=w3;
+assign PC_increment_out=w1;
+assign inst_memo_out=w8;
+assign alu_operation=w28;
+assign p1=w16;
+assign q1=w17;
+assign alu_output=w20;
+assign memo_write=memwrite; 
+assign memo_read=memread; 
+assign sign_ext_out=w15;
+assign data_mem_out=w21;
+ 
+endmodule
+
