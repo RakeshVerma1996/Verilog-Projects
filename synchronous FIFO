@@ -1,0 +1,84 @@
+module sync_fifo #(parameter datawidth=8,
+paremeter fifodepth=8,
+parameter addresswidth=3)
+(input clk,rst,wr_en,rd_en,
+input [(datawidth-1):0] datain,
+output reg buf_empty,buf_full,
+output reg [(addresswidth-1):0] fifo_counter,
+output reg [(datawidth-1):0] dataout);
+
+reg [addresswidth:0] wr_ptr,rd_ptr;
+reg [(datawidth-1):0] mem [0:(fifodepth-1)];    ////////memory is defined
+
+
+always@(fifo_counter)   //////////manages the fifo status
+begin
+buf_empty =(fifo_counter==0);
+buf_full= (fifo_counter==64);
+end
+
+always@(posedge clk,posedge rst)    /////////manages the fifo counter
+begin
+if(rst)
+fifo_counter<=0;
+
+else if((!buf_empty&&wr_en)&&(!buf_full&&read_en))
+fifo_counter<=fifo_counter;
+
+else if(!buf_full&&wr_en)
+fifo_counter<=fifo_counter+1;
+
+else if(!buf_empty&&re_en)
+fifo_counter<=fifo_counter-1;
+
+else
+fifo_counter<=fifo_counter;
+
+end
+
+always@(posedge clk,posedge rst)    /////manages reading operation
+begin
+if(rst)
+buf_out<=0;
+
+else
+begin 
+if(rd_en&&!buf_empty)
+buf_out<=buf_mem[rd_ptr];
+else
+buf_out<=buf_out;
+end 
+end
+
+
+always@(posedge clk)    ////////manages writing operation
+begin
+if(wr_en&&!buf_full)
+buf_mem[wr_ptr]<=buf_in;
+else
+buf_mem[wr_ptr]<=buf_mem[wr_ptr];
+end
+
+
+always@(posedge clk, posedge rst)    ///////// manages the ptr
+begin
+if(rst)
+begin
+wr_ptr<=0;
+rd_ptr<=0;
+end
+
+else        //////////////sequence should be same as writing occured to be first then reading 
+begin
+if(!buf_full&wr_en)
+wr_ptr<=wr_ptr+1;
+else
+wr_ptr<=wr_ptr;
+
+if(!buf_empty&rd_en)
+rd_ptr<=rd_ptr+1;
+else
+rd_ptr<=rd_ptr+1;
+end
+
+end
