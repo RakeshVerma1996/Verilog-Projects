@@ -16,39 +16,35 @@ endmodule
 
 //32 bit Booth multiplier
 module booth(out,rst,load,a,b);
-input rst,load;
+  input rst,load;
   input [31:0]a,b;
   output reg [63:0]out;
-integer i;
+  integer i;
   reg [64:0]tmp_a,s,p;
 
-always @(*)
-begin
-if(rst)
-out = 32'b0000000000000000;
-else
-begin
-if (load)
-  tmp_a = {~a + 1'b1,33'b000000000};
-  s = {a,33'b000000000};
-  p = {32'b00000000,b,1'b0};
-
-  for(i=0; i<32; i=i+1)
-begin
-case(p[1:0])
-  2'b00: p = {p[64], p[64:1]};
-2'b01: begin
-			p = p + s;
-  p = {p[64],p[64:1]};
-			end
-2'b10: begin
-			p = p + tmp_a;
-  p = {p[64],p[64:1]};
-			end
-  2'b11: p = {p[64], p[64:1]};
-default : p = 65'bxxxxxxxxxxxxxxxxx;
-endcase
-end
+  always @(*) begin
+   if(rst)
+   out = 32'b0000000000000000;
+   else begin
+    if (load)
+      tmp_a = {~a + 1'b1,33'b000000000};
+      s = {a,33'b000000000};
+      p = {32'b00000000,b,1'b0};
+      for(i=0; i<32; i=i+1) begin
+      case(p[1:0])
+        2'b00: p = {p[64], p[64:1]};
+        2'b01: begin
+	  p = p + s;
+          p = {p[64],p[64:1]};
+        end
+        2'b10: begin
+	  p = p + tmp_a;
+          p = {p[64],p[64:1]};
+        end
+        2'b11: p = {p[64], p[64:1]};
+        default : p = 65'bxxxxxxxxxxxxxxxxx;
+     endcase
+  end
   out = p[64:1];
 end
 end
